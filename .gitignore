@@ -1,0 +1,15 @@
+node_modules/
+dist/
+build/
+.env
+.env.*
+!.env.example
+coverage/
+*.log
+.DS_Store
+
+.agents/
+.claude/
+.cursor/
+.devin/
+*.tsbuildinfo
