@@ -19,7 +19,7 @@ A React-based dashboard for managing Shopify orders. The frontend communicates w
 - Vite
 - JavaScript
 - CSS
-- Fetch API
+- Axios
 
 ## Prerequisites
 
@@ -38,13 +38,15 @@ npm install
 
 ## Configuration
 
-The frontend connects to the NestJS backend at:
+The frontend connects to the NestJS backend at `http://localhost:3000` by default.
 
-`http://localhost:3000`
+To use a different API origin, create `frontend/.env` with:
+
+```env
+VITE_API_URL=http://localhost:3000
+```
 
 Ensure the backend is running and CORS is enabled.
-
-If the API URL is configured directly in the source code, update it to match your backend URL when deploying to another environment.
 
 ## Run the Development Server
 
@@ -76,7 +78,7 @@ npm run preview
 | GET | `/orders/:id` | Fetch an individual order |
 | POST | `/orders/sync` | Trigger Shopify order synchronization |
 
-The frontend uses the orders endpoint to populate the dashboard. Order synchronization is handled by the backend.
+The dashboard loads orders with `GET /orders`. Use **Sync from Shopify** to call `POST /orders/sync`, then refresh the table.
 
 ## Project Structure
 

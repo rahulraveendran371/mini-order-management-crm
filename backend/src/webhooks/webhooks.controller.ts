@@ -1,9 +1,10 @@
 
 import {
+  BadRequestException,
   Controller,
+  Headers,
   Post,
   Req,
-  Headers,
   UnauthorizedException,
 } from '@nestjs/common';
 import type { RawBodyRequest } from '@nestjs/common';
@@ -20,7 +21,9 @@ export class WebhooksController {
     @Req() req: RawBodyRequest<Request>,
     @Headers('x-shopify-hmac-sha256') hmac: string,
   ) {
-    const secret = process.env.SHOPIFY_CLIENT_SECRET;
+    const secret =
+      process.env.SHOPIFY_WEBHOOK_SECRET?.trim() ||
+      process.env.SHOPIFY_CLIENT_SECRET;
     const rawBody = req.rawBody;
 
     if (!secret || !hmac || !rawBody) {
@@ -43,12 +46,12 @@ export class WebhooksController {
       );
     }
 
-    let order: any;
+    let order: unknown;
 
     try {
       order = JSON.parse(rawBody.toString('utf8'));
     } catch {
-      throw new UnauthorizedException('Invalid webhook JSON');
+      throw new BadRequestException('Invalid webhook JSON');
     }
 
     await this.ordersService.saveShopifyWebhookOrder(order);

@@ -3,11 +3,12 @@ import { useEffect, useState } from 'react';
 import axios from 'axios';
 import './App.css';
 
-const API_URL = 'http://localhost:3000';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 function App() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [syncing, setSyncing] = useState(false);
   const [error, setError] = useState('');
   const [search, setSearch] = useState('');
   const [paymentFilter, setPaymentFilter] = useState('all');
@@ -21,21 +22,62 @@ function App() {
       const response = await axios.get(`${API_URL}/orders`);
       setOrders(response.data);
 
-      // Refresh ചെയ്താൽ selected order-ഉം update ചെയ്യുക
       setSelectedOrder((current) => {
         if (!current) return null;
         return response.data.find((o) => o.id === current.id) || null;
       });
     } catch (err) {
       console.error('Fetch orders error:', err);
-      setError('Orders load ചെയ്യാൻ കഴിഞ്ഞില്ല. Backend പരിശോധിക്കുക.');
+      setError('Could not load orders. Check that the backend is running.');
     } finally {
       setLoading(false);
     }
   };
 
+  const syncFromShopify = async () => {
+    try {
+      setSyncing(true);
+      setError('');
+      await axios.post(`${API_URL}/orders/sync`);
+      await fetchOrders();
+    } catch (err) {
+      console.error('Shopify sync error:', err);
+      setError(
+        'Shopify sync failed. Check backend logs and Shopify credentials.',
+      );
+    } finally {
+      setSyncing(false);
+    }
+  };
+
   useEffect(() => {
-    fetchOrders();
+    let cancelled = false;
+
+    const loadInitialOrders = async () => {
+      try {
+        const response = await axios.get(`${API_URL}/orders`);
+        if (cancelled) return;
+
+        setOrders(response.data);
+        setSelectedOrder((current) => {
+          if (!current) return null;
+          return response.data.find((o) => o.id === current.id) || null;
+        });
+      } catch (err) {
+        if (cancelled) return;
+
+        console.error('Fetch orders error:', err);
+        setError('Could not load orders. Check that the backend is running.');
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+
+    void loadInitialOrders();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const filteredOrders = orders.filter((order) => {
@@ -71,9 +113,14 @@ function App() {
           </p>
         </div>
 
-        <button onClick={fetchOrders} disabled={loading}>
-          {loading ? 'Loading...' : 'Refresh Orders'}
-        </button>
+        <div className="header-actions">
+          <button onClick={syncFromShopify} disabled={loading || syncing}>
+            {syncing ? 'Syncing...' : 'Sync from Shopify'}
+          </button>
+          <button onClick={fetchOrders} disabled={loading || syncing}>
+            {loading ? 'Loading...' : 'Refresh Orders'}
+          </button>
+        </div>
       </header>
 
       <section className="stats">

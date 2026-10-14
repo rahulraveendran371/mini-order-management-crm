@@ -18,7 +18,7 @@ A mini order management CRM that integrates Shopify with a NestJS backend, Postg
 **Backend:** NestJS, Node.js
 **Database:** PostgreSQL
 **ORM:** Prisma
-**Integration:** Shopify Admin GraphQL and REST APIs, Shopify Webhooks
+**Integration:** Shopify Admin REST API, Shopify Webhooks
 
 ## Prerequisites
 
@@ -69,7 +69,7 @@ DATABASE_URL="postgresql://USER:PASSWORD@localhost:5432/mini_order_crm"
 SHOPIFY_STORE_DOMAIN="your-development-store.myshopify.com"
 SHOPIFY_CLIENT_ID="your-shopify-client-id"
 SHOPIFY_CLIENT_SECRET="your-shopify-client-secret"
-SHOPIFY_WEBHOOK_SECRET="your-webhook-signing-secret"
+SHOPIFY_WEBHOOK_SECRET=""
 PORT=3000
 ```
 
@@ -121,13 +121,23 @@ Open the Vite URL displayed in the terminal, usually:
 
 ## Shopify Integration
 
-The application uses Shopify credentials to request an Admin API access token and retrieve orders. The sync endpoint stores retrieved orders in PostgreSQL.
+The application uses Shopify credentials to request an Admin API access token and retrieve orders. The sync endpoint follows Shopify's pagination links and upserts retrieved orders in PostgreSQL by Shopify order ID, replacing stored line items when an order is updated.
 
 A Shopify `orders/create` webhook subscription sends new order events to `/webhooks/orders-create` through a publicly accessible HTTPS endpoint during development.
 
 For local webhook testing, a tunnelling service such as ngrok can expose the local backend. Configure the webhook URL in Shopify and keep the tunnel running while testing.
 
-Webhook requests must be authenticated using Shopify's correct webhook signing secret. Configure `SHOPIFY_WEBHOOK_SECRET` with the appropriate secret and verify the request's HMAC before processing webhook data.
+Webhook HMAC verification uses `SHOPIFY_WEBHOOK_SECRET` when it is set, and otherwise `SHOPIFY_CLIENT_SECRET`. Use the signing secret that matches how the webhook was created (Admin notification secret vs app client secret).
+
+## Tests
+
+Run the backend unit tests with:
+
+```bash
+npm test
+```
+
+The Jest configuration runs NestJS's ESM dependencies with Node's experimental VM module support.
 
 ## Error Handling
 

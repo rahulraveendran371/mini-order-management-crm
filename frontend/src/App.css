@@ -39,6 +39,12 @@ button:disabled {
   margin-bottom: 30px;
 }
 
+.header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
 .eyebrow {
   color: #176b50;
   font-size: 12px;
